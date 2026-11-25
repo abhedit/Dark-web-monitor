@@ -1,0 +1,25 @@
+x-service: &service
+  build: .
+  restart: unless-stopped
+  volumes: [monitor-data:/app/data]
+services:
+  web:
+    <<: *service
+    ports: ["127.0.0.1:8080:8080"]
+    environment:
+      PUBLIC_ORIGIN: ${PUBLIC_ORIGIN:-http://localhost:8080}
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:8080/health').then(r => { if (!r.ok) process.exitCode = 1 }).catch(() => { process.exitCode = 1 })"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+  worker:
+    <<: *service
+    command: ["node","worker.js"]
+    environment:
+      RANSOMWARE_LIVE_KEY: ${RANSOMWARE_LIVE_KEY:-}
+      HIBP_KEY: ${HIBP_KEY:-}
+      ALERT_ENDPOINTS: ${ALERT_ENDPOINTS:-}
+volumes:
+  monitor-data:
